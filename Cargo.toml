@@ -1,0 +1,20 @@
+[package]
+name = "birthdaybot"
+version = "0.1.0"
+authors = ["Matthew <staalkoper@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = "1.0.115"
+serde_yaml = "0.8.13"
+typemap = "0.3.3"
+time = { version = "0.1.35" }
+
+[dependencies.serenity]
+features = ["framework", "standard_framework", "rustls_backend", "cache"]
+
+[dependencies.tokio]
+version = "0.2"
+features = ["macros"]
