@@ -7,6 +7,7 @@ use std::io::prelude::*;
 pub struct Config {
     pub token: String,
     pub prefix: String,
+    pub db_uri: String,
     location: String
 }
 
@@ -18,6 +19,7 @@ impl Config {
                 let conf = Config {
                     token: String::new(),
                     prefix: String::from(";"),
+                    db_uri: String::new(),
                     location,
                 };
                 conf.save();

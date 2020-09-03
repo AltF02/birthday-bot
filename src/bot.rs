@@ -3,6 +3,7 @@ mod commands;
 mod utils;
 
 use crate::config::Config;
+use crate::database;
 
 use events::Handler;
 use serenity::{
@@ -12,6 +13,8 @@ use serenity::{
     prelude::TypeMapKey,
     Client
 };
+
+use crate::database::DataBase;
 
 impl TypeMapKey for Config {
     type Value = Config;
@@ -33,9 +36,12 @@ pub async fn start(config: Config) {
         .await
         .expect("Err creating client");
 
+    let db_client = database::connect(&config.db_uri).await;
+
     {
         let mut data = client.data.write().await;
         data.insert::<Config>(config);
+        data.insert::<DataBase>(db_client);
     }
 
     if let Err(e) = client.start().await {

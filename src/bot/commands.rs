@@ -13,9 +13,10 @@ use serenity::{
 };
 use crate::bot::utils::{reply};
 use crate::config::Config;
+use crate::bot::DataBase;
 
 #[group()]
-#[commands(ping, prefix)]
+#[commands(ping, prefix, db_test)]
 pub struct Commands;
 
 #[command]
@@ -42,6 +43,18 @@ async fn prefix(ctx: &Context, msg: &Message) -> CommandResult {
                  msg.channel_id, why
         );
     };
+
+    Ok(())
+}
+
+#[command]
+async fn db_test(ctx: &Context, msg: &Message) -> CommandResult {
+    let data = ctx.data.read().await;
+    let db = data.get::<DataBase>().unwrap();
+
+    let rows = db.query("SELECT yeet FROM birthdaybot.test", &[]).await.unwrap();
+
+    reply(&ctx, &msg, &rows[0].get(0)).await;
 
     Ok(())
 }

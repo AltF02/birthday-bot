@@ -1,5 +1,6 @@
 mod config;
 mod bot;
+mod database;
 
 use crate::config::Config;
 
