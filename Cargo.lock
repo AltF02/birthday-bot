@@ -81,6 +81,7 @@ checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 name = "birthdaybot"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "serde",
  "serde_yaml",
  "serenity",
@@ -902,6 +903,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d14b0a4f433b0e0b565bb0fbc0ac9fc3d79ca338ba265ad0e7eef0f3bcc5e94"
 dependencies = [
  "bytes",
+ "chrono",
  "fallible-iterator",
  "postgres-protocol",
 ]
