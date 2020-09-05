@@ -1,6 +1,6 @@
 [package]
 name = "birthdaybot"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["Matthew <staalkoper@gmail.com>"]
 edition = "2018"
 
@@ -15,7 +15,7 @@ tokio-postgres = { version = "0.5.5", features = ["with-chrono-0_4"] }
 chrono = { version = "0.4.15" }
 
 [dependencies.serenity]
-version = "0.9.0-rc.0"
+version = "0.9.0-rc.1"
 features = ["framework", "standard_framework", "rustls_backend", "cache", "collector"]
 
 [dependencies.tokio]

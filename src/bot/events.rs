@@ -11,6 +11,6 @@ pub struct Handler;
 impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
         let user = &ready.user;
-        println!("Logged in as {}", user.name)
+        println!("Logged in as {}#{}", user.name, user.discriminator)
     }
 }

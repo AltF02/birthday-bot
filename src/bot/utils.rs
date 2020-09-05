@@ -3,13 +3,10 @@ use serenity::model::channel::Message;
 use chrono::{NaiveDate, Utc, Datelike};
 use serenity::model::channel::ReactionType::Unicode;
 use std::time::Duration;
+use serenity::Error;
 
-pub(crate) async fn reply(ctx: &Context, msg: &Message, content: &String) {
-    if let Err(why) = msg.channel_id.say(&ctx.http, &content).await {
-        println!("Failed to send message in #{} because\n{:?}",
-                 msg.channel_id, why
-        );
-    }
+pub(crate) async fn reply(ctx: &Context, msg: &Message, content: &String) -> Result<Message, Error> {
+    return msg.channel_id.say(&ctx.http, &content).await
 }
 
 pub(crate) fn calculate_age(born: NaiveDate) -> i32 {
@@ -43,16 +40,16 @@ pub(crate) async fn confirm(ctx: &Context, msg: &Message, title: &String, descri
                 match emoji.as_data().as_str() {
                     "✅" => { true }
                     "❌" => {
-                        reply(&ctx, &msg, &"Please restart the process".to_string()).await;
+                        reply(&ctx, &msg, &"Please restart the process".to_string()).await.expect("Unable to send message");
                         false
                     }
                     _ => {
-                        reply(&ctx, &msg, &"Bruh don't add more reactions, start again smh. This is why the human race is a mistake".to_string()).await;
+                        reply(&ctx, &msg, &"Bruh don't add more reactions, start again smh. This is why the human race is a mistake".to_string()).await.expect("Unable to send message");
                         false
                     }
                 }
             } else {
-                reply(&ctx, &msg, &"What the heck you didn't react".to_string()).await;
+                reply(&ctx, &msg, &"What the heck you didn't react".to_string()).await.expect("Unable to send message");
                 false
             }
         }
@@ -64,13 +61,3 @@ pub(crate) async fn confirm(ctx: &Context, msg: &Message, title: &String, descri
         }
     }
 }
-
-/*
-pub(crate) async fn reply_embed<T>(ctx: &Context, msg: &Message, embed: T) {
-    if let Err(why) = msg.channel_id.send_message(&ctx.http, &embed).await {
-        println!("Failed to send message in #{} because\n{:?}",
-                 msg.channel_id, why
-        );
-    }
-}
-*/
