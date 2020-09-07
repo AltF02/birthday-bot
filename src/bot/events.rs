@@ -4,6 +4,10 @@ use serenity::{
     prelude::*,
 };
 
+use log::{
+    info,
+    warn
+};
 
 pub struct Handler;
 
@@ -11,6 +15,6 @@ pub struct Handler;
 impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
         let user = &ready.user;
-        println!("Logged in as {}#{}", user.name, user.discriminator)
+        info!("Logged in as {}#{}", user.name, user.discriminator)
     }
 }

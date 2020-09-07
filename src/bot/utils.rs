@@ -5,7 +5,20 @@ use serenity::model::channel::ReactionType::Unicode;
 use std::time::Duration;
 use serenity::Error;
 
-pub(crate) async fn reply(ctx: &Context, msg: &Message, content: &String) -> Result<Message, Error> {
+use log::{
+    warn
+};
+
+pub(crate) async fn reply(ctx: &Context, msg: &Message, content: &String) {
+    if let Err(why) = msg.channel_id.say(&ctx.http, &content).await {
+        warn!(
+            "Failed to send message in #{} because\n{:?}",
+            msg.channel_id, why
+        );
+    }
+}
+
+pub(crate) async fn comp_reply(ctx: &Context, msg: &Message, content: &String) -> Result<Message, Error> {
     return msg.channel_id.say(&ctx.http, &content).await
 }
 
@@ -40,16 +53,16 @@ pub(crate) async fn confirm(ctx: &Context, msg: &Message, title: &String, descri
                 match emoji.as_data().as_str() {
                     "✅" => { true }
                     "❌" => {
-                        reply(&ctx, &msg, &"Please restart the process".to_string()).await.expect("Unable to send message");
+                        reply(&ctx, &msg, &"Please restart the process".to_string()).await;
                         false
                     }
                     _ => {
-                        reply(&ctx, &msg, &"Bruh don't add more reactions, start again smh. This is why the human race is a mistake".to_string()).await.expect("Unable to send message");
+                        reply(&ctx, &msg, &"Bruh don't add more reactions, start again smh. This is why the human race is a mistake".to_string()).await;
                         false
                     }
                 }
             } else {
-                reply(&ctx, &msg, &"What the heck you didn't react".to_string()).await.expect("Unable to send message");
+                reply(&ctx, &msg, &"What the heck you didn't react".to_string()).await;
                 false
             }
         }

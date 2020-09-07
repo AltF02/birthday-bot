@@ -25,12 +25,12 @@ pub struct Owner;
 #[command]
 #[aliases("gay", "stupid")]
 async fn yeet(ctx: &Context, msg: &Message) -> CommandResult {
-    reply(&ctx, &msg, &"Hey if you see this the check worked!".to_string()).await.expect("Unable to send message");
+    reply(&ctx, &msg, &"Hey if you see this the check worked!".to_string()).await;
     Ok(())
 }
 
 #[command]
 async fn test(ctx: &Context, msg: &Message) -> CommandResult {
-    reply(&ctx, &msg, &"Gay".to_string()).await.expect("Unable to send message");
+    reply(&ctx, &msg, &"Gay".to_string()).await;
     Ok(())
 }

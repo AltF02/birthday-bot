@@ -12,7 +12,7 @@ use serenity::{
         channel::Message
     }
 };
-use crate::bot::utils::{reply, calculate_age, confirm};
+use crate::bot::utils::{reply, calculate_age, confirm, comp_reply};
 use crate::config::Config;
 use crate::bot::{DataBase, ShardManagerContainer};
 use std::{
@@ -20,6 +20,11 @@ use std::{
         Duration,
         Instant
     }
+};
+
+use log::{
+    info,
+    warn
 };
 use chrono::prelude::*;
 use serenity::client::bridge::gateway::ShardId;
@@ -47,21 +52,21 @@ async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
     };
 
     let now = Instant::now();
-    let mut message = match reply(&ctx, &msg, &"Calculating...".to_string()).await {
+    let mut message = match comp_reply(&ctx, &msg, &"Calculating...".to_string()).await {
         Ok(m) => m,
         Err(why) => {
-            println!("Unable to send message: {}", why);
+            warn!("Unable to send message: {}", why);
             return Ok(())
         }
     };
-    let rest_latency = now.elapsed().as_millis();
+    let rest_latency = format!("{:.2}ms", now.elapsed().as_micros() as f32 / 1000.0);
 
     message.edit(ctx, |m| {
         m.content("");
         m.embed(|e| {
-            e.title("Pong!");
+            e.title("Pong! 🏓");
             e.color(0xffa500);
-            e.description(format!("WS: {}\nREST: {}ms", shard_latency, rest_latency))
+            e.description(format!("*WS:* {}\n*REST:* {}", shard_latency, rest_latency))
         })
     }).await.unwrap();
 
@@ -100,24 +105,24 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .unwrap();
 
     if !user.is_empty() {
-        reply(&ctx, &msg, &String::from("You already have a birthday set")).await.expect("Unable to send message");
+        reply(&ctx, &msg, &String::from("You already have a birthday set")).await;
 
     } else {
-        reply(&ctx, &msg, &format!("Hey there **{}**, please enter your birthday. `[ DD/MM/YYYY ]`", msg.author.name)).await.expect("Unable to send message");
+        reply(&ctx, &msg, &format!("Hey there **{}**, please enter your birthday. `[ DD/MM/YYYY ]`", msg.author.name)).await;
         let date: NaiveDate;
 
         if let Some(answer) = &msg.author.await_reply(&ctx).timeout(Duration::from_secs(20)).await {
             date = NaiveDate::parse_from_str(&answer.content.as_str(), "%d/%m/%Y").unwrap();
 
         } else {
-            reply(&ctx, &msg, &String::from("Bruh you didn't reply stupid")).await.expect("Unable to send message");
+            reply(&ctx, &msg, &String::from("Bruh you didn't reply stupid")).await;
             return Ok(())
         }
 
         let today: NaiveDate = Utc::today().naive_utc();
 
         if date > today {
-            reply(&ctx, &msg, &"Nope you can't exist in the future smh".to_string()).await.expect("Unable to send message");
+            reply(&ctx, &msg, &"Nope you can't exist in the future smh".to_string()).await;
             return Ok(())
         }
 
@@ -125,7 +130,7 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
         match age {
             0 ..= 12 => {
-                reply(&ctx, &msg, &format!("You have to be at least **13** to use Discord **{}**, are you saying that you're underage!? 🤔", msg.author.name)).await.expect("Unable to send message");
+                reply(&ctx, &msg, &format!("You have to be at least **13** to use Discord **{}**, are you saying that you're underage!? 🤔", msg.author.name)).await;
             }
             13..= 116 => {
                 let conf = confirm(&ctx, &msg, &"Is this correct?".to_string(), &format!("Is your age **{}** and your birthday is on **{}**?", age.to_string(), date.to_string())).await;
@@ -135,13 +140,13 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                         if let Err(why) = db.execute("INSERT INTO birthdaybot.birthdays VALUES ($1, $2)", &[&(msg.author.id.0 as i64), &date]).await {
                             println!("{:?}", why)
                         };
-                        reply(&ctx, &msg, &"Confirmed!".to_string()).await.expect("Unable to send message");
+                        reply(&ctx, &msg, &"Confirmed!".to_string()).await;
                     }
                     false => {}
                 }
             }
             _ => {
-                reply(&ctx, &msg, &format!("The oldest person in the world is **116**, doubtful that you're that old **{}**...", msg.author.name)).await.expect("Unable to send message");
+                reply(&ctx, &msg, &format!("The oldest person in the world is **116**, doubtful that you're that old **{}**...", msg.author.name)).await;
             }
         }
     }
