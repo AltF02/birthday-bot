@@ -23,7 +23,6 @@ use std::{
 };
 
 use log::{
-    info,
     warn
 };
 use chrono::prelude::*;
@@ -87,7 +86,7 @@ async fn prefix(ctx: &Context, msg: &Message) -> CommandResult {
         m
 
     }).await {
-        println!("Failed to send message in #{} because\n{:?}",
+        warn!("Failed to send message in #{} because\n{:?}",
                  msg.channel_id, why
         );
     };
@@ -138,7 +137,7 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 match conf {
                     true => {
                         if let Err(why) = db.execute("INSERT INTO birthdaybot.birthdays VALUES ($1, $2)", &[&(msg.author.id.0 as i64), &date]).await {
-                            println!("{:?}", why)
+                            warn!("Unable to insert into database {:?}", why)
                         };
                         reply(&ctx, &msg, &"Confirmed!".to_string()).await;
                     }

@@ -7,6 +7,10 @@ use tokio_postgres::{
     NoTls
 };
 
+use log::{
+    error
+};
+
 pub struct DataBase(DBClient);
 
 impl TypeMapKey for DataBase {
@@ -21,7 +25,7 @@ pub(crate) async fn connect(uri: &String) -> DBClient {
 
     tokio::spawn(async move {
         if let Err(e) = connection.await {
-            eprintln!("connection error: {}", e);
+            error!("connection error: {}", e);
         }
     });
 

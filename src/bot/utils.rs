@@ -67,7 +67,7 @@ pub(crate) async fn confirm(ctx: &Context, msg: &Message, title: &String, descri
             }
         }
         Err(why) => {
-            println!("Failed to send message in #{} because\n{:?}",
+            warn!("Failed to send message in #{} because\n{:?}",
                      msg.channel_id, why
             );
             false
