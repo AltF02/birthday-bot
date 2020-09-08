@@ -1,13 +1,19 @@
-use serenity::prelude::Context;
-use serenity::model::channel::Message;
 use chrono::{NaiveDate, Utc, Datelike};
-use serenity::model::channel::ReactionType::Unicode;
 use std::time::Duration;
-use serenity::Error;
+use serenity::{
+    prelude::*,
+    model::prelude::ReactionType::Unicode,
+    model::prelude::*,
+    Error,
+    Result as SerenityResult
+};
 
 use log::{
     warn
 };
+
+use tokio_postgres::Client as DBClient;
+use regex::Regex;
 
 pub(crate) async fn reply(ctx: &Context, msg: &Message, content: &String) {
     if let Err(why) = msg.channel_id.say(&ctx.http, &content).await {
@@ -72,5 +78,46 @@ pub(crate) async fn confirm(ctx: &Context, msg: &Message, title: &String, descri
             );
             false
         }
+    }
+}
+
+pub(crate) fn check_msg(result: SerenityResult<Message>) {
+    if let Err(why) = result {
+        warn!("Error sending message: {:?}", why);
+    }
+}
+
+pub(crate) async fn check_birthday_noted(msg: &Message, db: &DBClient) -> bool {
+    let user = db.query("SELECT date FROM birthdaybot.birthdays WHERE user_id = $1", &[&(msg.author.id.0 as i64)])
+        .await
+        .unwrap();
+
+    !user.is_empty()
+}
+
+pub(crate) async fn parse_member(ctx: &Context, msg: &Message, member_name: String) -> Option<Member> {
+    let member: Member;
+    if let Ok(id) = member_name.parse::<u64>() {
+        member = match msg.guild_id.unwrap().member(ctx, id).await {
+            Ok(m) => m,
+            Err(_e) => {
+                return None
+            }
+        };
+        Some(member.to_owned())
+    } else if member_name.starts_with("<@") && member_name.ends_with(">") {
+        let re = Regex::new("[<@!>]").unwrap();
+        let member_id = re.replace_all(&member_name, "").into_owned();
+
+        member = match msg.guild_id.unwrap().member(ctx, UserId(member_id.parse::<u64>().unwrap())).await {
+            Ok(m) => m,
+            Err(_e) => {
+                return None
+            }
+        };
+
+        Some(member.to_owned())
+    } else {
+        None
     }
 }

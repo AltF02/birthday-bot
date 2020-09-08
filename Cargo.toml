@@ -1,6 +1,6 @@
 [package]
 name = "birthdaybot"
-version = "0.1.3"
+version = "0.2.3"
 authors = ["Matthew <staalkoper@gmail.com>"]
 edition = "2018"
 
@@ -8,10 +8,12 @@ edition = "2018"
 
 [dependencies]
 log = "0.4.11"
+regex = "1.3.9"
 simple_logger = "1.9.0"
 serde = "1.0.115"
 serde_yaml = "0.8.13"
 typemap = "0.3.3"
+futures = "0.3.5"
 time = { version = "0.1.35" }
 tokio-postgres = { version = "0.5.5", features = ["with-chrono-0_4"] }
 chrono = { version = "0.4.15" }

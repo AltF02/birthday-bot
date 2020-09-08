@@ -12,7 +12,7 @@ use serenity::{
         channel::Message
     }
 };
-use crate::bot::utils::{reply, calculate_age, confirm, comp_reply};
+use crate::bot::utils::{reply, calculate_age, confirm, comp_reply, check_birthday_noted, parse_member, check_msg};
 use crate::config::Config;
 use crate::bot::{DataBase, ShardManagerContainer};
 use std::{
@@ -25,15 +25,20 @@ use std::{
 use log::{
     warn
 };
+
 use chrono::prelude::*;
 use serenity::client::bridge::gateway::ShardId;
+use serenity::model::user::User;
+use serenity::model::guild::Member;
+use serenity::utils::Colour;
 
 
 #[group()]
-#[commands(ping, prefix, set)]
+#[commands(ping, prefix, set, birthday, avatar)]
 pub struct General;
 
 #[command]
+#[aliases("pong", "latency")]
 async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
     let data = ctx.data.read().await;
 
@@ -99,11 +104,7 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data = ctx.data.read().await;
     let db = data.get::<DataBase>().unwrap();
 
-    let user = db.query("SELECT date FROM birthdaybot.birthdays WHERE user_id = $1", &[&(msg.author.id.0 as i64)])
-        .await
-        .unwrap();
-
-    if !user.is_empty() {
+    if check_birthday_noted(&msg, &db).await {
         reply(&ctx, &msg, &String::from("You already have a birthday set")).await;
 
     } else {
@@ -128,20 +129,16 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         let age = calculate_age(date);
 
         match age {
-            0 ..= 12 => {
+            0..= 12 => {
                 reply(&ctx, &msg, &format!("You have to be at least **13** to use Discord **{}**, are you saying that you're underage!? 🤔", msg.author.name)).await;
             }
             13..= 116 => {
-                let conf = confirm(&ctx, &msg, &"Is this correct?".to_string(), &format!("Is your age **{}** and your birthday is on **{}**?", age.to_string(), date.to_string())).await;
 
-                match conf {
-                    true => {
-                        if let Err(why) = db.execute("INSERT INTO birthdaybot.birthdays VALUES ($1, $2)", &[&(msg.author.id.0 as i64), &date]).await {
-                            warn!("Unable to insert into database {:?}", why)
-                        };
-                        reply(&ctx, &msg, &"Confirmed!".to_string()).await;
-                    }
-                    false => {}
+                if confirm(&ctx, &msg, &"Is this correct?".to_string(), &format!("Is your age **{}** and your birthday is on **{}**?", age.to_string(), date.format("%d %B").to_string())).await {
+                    if let Err(why) = db.execute("INSERT INTO birthdaybot.birthdays VALUES ($1, $2)", &[&(msg.author.id.0 as i64), &date]).await {
+                        warn!("Unable to insert into database {:?}", why)
+                    };
+                    reply(&ctx, &msg, &"Confirmed!".to_string()).await;
                 }
             }
             _ => {
@@ -151,5 +148,60 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     }
 
     // reply(&ctx, &msg, &format!("{}", confirm(&ctx, &msg, &"Title".to_string(), &"Description".to_string()).await)).await;
+    Ok(())
+}
+
+#[command]
+#[aliases("birth", "b")]
+async fn birthday(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let member: User = match args.single_quoted::<String>() {
+        Ok(arg) => {
+            match parse_member(ctx, msg, arg).await {
+                Some(m) => m.user,
+                None => {
+                    reply(ctx, msg, &"Unable to locate user".to_string()).await;
+                    return Ok(());
+                }
+            }
+        }
+        Err(_e) => {
+            msg.author.to_owned()
+        }
+
+    };
+    reply(ctx, msg, &format!("{}#{}", member.name, member.discriminator)).await;
+    Ok(())
+}
+
+#[command]
+#[aliases("av", "pfp")]
+#[only_in("guilds")]
+async fn avatar(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let member: Member = match args.single_quoted::<String>() {
+        Ok(arg) => {
+            match parse_member(ctx, msg, arg).await {
+                Some(m) => m,
+                None => {
+                    reply(ctx, msg, &"Unable to locate user".to_string()).await;
+                    return Ok(());
+                }
+            }
+        }
+        Err(_e) => {
+            let guild = msg.guild_id.unwrap();
+            guild.member(ctx, msg.author.id).await.unwrap()
+        }
+
+    };
+    let colour = member.colour(ctx).await.unwrap_or(Colour::new(0xffa500));
+    check_msg(msg.channel_id.send_message(&ctx.http,  |m| {
+        m.embed(|embed| {
+            embed.title(format!("{} looking kinda secksy", member.display_name()));
+            embed.image(member.user.avatar_url().unwrap_or(member.user.default_avatar_url()));
+            embed.colour(colour)
+        });
+        m
+
+    }).await);
     Ok(())
 }
