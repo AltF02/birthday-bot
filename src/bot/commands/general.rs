@@ -104,7 +104,7 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data = ctx.data.read().await;
     let db = data.get::<DataBase>().unwrap();
 
-    if check_birthday_noted(&msg, &db).await {
+    if !check_birthday_noted(msg.author.id.0 as i64, &db).await.is_empty() {
         reply(&ctx, &msg, &String::from("You already have a birthday set")).await;
 
     } else {
@@ -154,7 +154,7 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 #[command]
 #[aliases("birth", "b")]
 async fn birthday(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let member: User = match args.single_quoted::<String>() {
+    let user: User = match args.single_quoted::<String>() {
         Ok(arg) => {
             match parse_member(ctx, msg, arg).await {
                 Some(m) => m.user,
@@ -169,7 +169,33 @@ async fn birthday(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         }
 
     };
-    reply(ctx, msg, &format!("{}#{}", member.name, member.discriminator)).await;
+
+    let data = ctx.data.read().await;
+    let db = data.get::<DataBase>().unwrap();
+
+    if user.id == ctx.cache.current_user_id().await {
+        reply(ctx, msg, &"Sadly robots don't have birthdays :(".to_string()).await;
+        return Ok(())
+    }
+
+    let birthday_noted = check_birthday_noted(user.id.0 as i64, db).await;
+    if birthday_noted.is_empty() {
+        reply(ctx, msg, &format!("**{}** has not saved his/her/their birthday yet :(", user.name)).await;
+        return Ok(())
+    }
+    let birthday: NaiveDate = birthday_noted[0].get(0);
+    let age: i32 = calculate_age(birthday);
+
+    check_msg(msg.channel_id.send_message(&ctx.http,  |m| {
+        m.embed(|embed| {
+            embed.title(format!("{}'s birthday", user.name));
+            embed.thumbnail(user.face());
+            embed.description(format!("🍰 Birthday: **{}**\n📅 Age: **{}**", birthday.format("%d %B").to_string(), age));
+            embed.colour(0xffa500)
+        });
+        m
+
+    }).await);
     Ok(())
 }
 
@@ -197,7 +223,7 @@ async fn avatar(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     check_msg(msg.channel_id.send_message(&ctx.http,  |m| {
         m.embed(|embed| {
             embed.title(format!("{} looking kinda secksy", member.display_name()));
-            embed.image(member.user.avatar_url().unwrap_or(member.user.default_avatar_url()));
+            embed.image(member.user.face());
             embed.colour(colour)
         });
         m

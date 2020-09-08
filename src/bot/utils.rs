@@ -12,7 +12,7 @@ use log::{
     warn
 };
 
-use tokio_postgres::Client as DBClient;
+use tokio_postgres::{Client as DBClient, Row};
 use regex::Regex;
 
 pub(crate) async fn reply(ctx: &Context, msg: &Message, content: &String) {
@@ -38,6 +38,7 @@ pub(crate) fn calculate_age(born: NaiveDate) -> i32 {
     age
 }
 
+#[allow(unused_must_use)]
 pub(crate) async fn confirm(ctx: &Context, msg: &Message, title: &String, description: &String) -> bool {
     let conf_msg =  msg.channel_id.send_message(&ctx.http,  |m| {
         m.embed(|embed| {
@@ -52,7 +53,7 @@ pub(crate) async fn confirm(ctx: &Context, msg: &Message, title: &String, descri
     }).await;
 
     return match conf_msg {
-        Ok(conf_msg) => {
+        Ok(mut conf_msg) => {
             if let Some(reaction) = &conf_msg.await_reaction(&ctx).timeout(Duration::from_secs(10)).author_id(msg.author.id).await {
                 let emoji = &reaction.as_inner_ref().emoji;
 
@@ -60,15 +61,16 @@ pub(crate) async fn confirm(ctx: &Context, msg: &Message, title: &String, descri
                     "✅" => { true }
                     "❌" => {
                         reply(&ctx, &msg, &"Please restart the process".to_string()).await;
+                        conf_msg.edit(&ctx, |m| m.content("Please restart the process")).await;
                         false
                     }
                     _ => {
-                        reply(&ctx, &msg, &"Bruh don't add more reactions, start again smh. This is why the human race is a mistake".to_string()).await;
+                        conf_msg.edit(&ctx, |m| m.content("Bruh don't add more reactions, start again smh. This is why the human race is a mistake")).await;
                         false
                     }
                 }
             } else {
-                reply(&ctx, &msg, &"What the heck you didn't react".to_string()).await;
+                conf_msg.edit(&ctx, |m| m.content("What the heck you didn't react")).await;
                 false
             }
         }
@@ -87,12 +89,12 @@ pub(crate) fn check_msg(result: SerenityResult<Message>) {
     }
 }
 
-pub(crate) async fn check_birthday_noted(msg: &Message, db: &DBClient) -> bool {
-    let user = db.query("SELECT date FROM birthdaybot.birthdays WHERE user_id = $1", &[&(msg.author.id.0 as i64)])
+pub(crate) async fn check_birthday_noted(user_id: i64, db: &DBClient) -> Vec<Row> {
+    let user = db.query("SELECT date FROM birthdaybot.birthdays WHERE user_id = $1", &[&user_id])
         .await
         .unwrap();
 
-    !user.is_empty()
+    user
 }
 
 pub(crate) async fn parse_member(ctx: &Context, msg: &Message, member_name: String) -> Option<Member> {

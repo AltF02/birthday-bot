@@ -8,6 +8,8 @@ pub struct Config {
     pub token: String,
     pub prefix: String,
     pub db_uri: String,
+    pub role_id: u64,
+    pub guild_id: u64,
     location: String
 }
 
@@ -20,6 +22,8 @@ impl Config {
                     token: String::new(),
                     prefix: String::from(";"),
                     db_uri: String::new(),
+                    role_id: 0,
+                    guild_id: 0,
                     location,
                 };
                 conf.save();
