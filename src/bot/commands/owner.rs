@@ -1,19 +1,13 @@
 use serenity::{
-    prelude::*,
     framework::standard::{
+        macros::{command, group},
         CommandResult,
-        macros::{
-            command, group
-        }
-
     },
-    model::{
-        channel::Message
-    }
+    model::channel::Message,
+    prelude::*,
 };
 
 use crate::bot::utils::reply;
-
 
 #[group()]
 #[prefixes("owner")]
@@ -25,7 +19,12 @@ pub struct Owner;
 #[command]
 #[aliases("gay", "stupid")]
 async fn yeet(ctx: &Context, msg: &Message) -> CommandResult {
-    reply(&ctx, &msg, &"Hey if you see this the check worked!".to_string()).await;
+    reply(
+        &ctx,
+        &msg,
+        &"Hey if you see this the check worked!".to_string(),
+    )
+    .await;
     Ok(())
 }
 

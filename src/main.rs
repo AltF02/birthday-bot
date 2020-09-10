@@ -1,14 +1,11 @@
-mod config;
 mod bot;
+mod config;
 mod database;
 
 use crate::config::Config;
 use simple_logger::SimpleLogger;
 
-use log::{
-    LevelFilter,
-    info
-};
+use log::{info, LevelFilter};
 
 #[tokio::main]
 async fn main() {

@@ -1,19 +1,15 @@
-mod events;
-mod commands;
-mod utils;
 mod checks;
+mod commands;
+mod events;
+mod utils;
 
 use crate::config::Config;
 use crate::database;
 
 use events::Handler;
 use serenity::{
-    framework::standard::{
-        StandardFramework,
-    },
-    prelude::TypeMapKey,
-    Client,
-    client::bridge::gateway::ShardManager,
+    client::bridge::gateway::ShardManager, framework::standard::StandardFramework,
+    prelude::TypeMapKey, Client,
 };
 
 use crate::database::DataBase;
@@ -33,7 +29,6 @@ impl TypeMapKey for ShardManagerContainer {
 }
 
 pub async fn start(config: Config) {
-
     let http = Http::new_with_token(&config.token);
 
     let (owners, bot_id) = match http.get_current_application_info().await {

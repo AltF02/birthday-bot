@@ -1,37 +1,25 @@
-use serenity::{
-    prelude::*,
-    framework::standard::{
-        Args,
-        CommandResult,
-        macros::{
-            command, group
-        }
-
-    },
-    model::{
-        channel::Message
-    }
+use crate::bot::utils::{
+    calculate_age, check_birthday_noted, check_msg, comp_reply, confirm, parse_member, reply,
 };
-use crate::bot::utils::{reply, calculate_age, confirm, comp_reply, check_birthday_noted, parse_member, check_msg};
-use crate::config::Config;
 use crate::bot::{DataBase, ShardManagerContainer};
-use std::{
-    time::{
-        Duration,
-        Instant
-    }
+use crate::config::Config;
+use serenity::{
+    framework::standard::{
+        macros::{command, group},
+        Args, CommandResult,
+    },
+    model::channel::Message,
+    prelude::*,
 };
+use std::time::{Duration, Instant};
 
-use log::{
-    warn
-};
+use log::warn;
 
 use chrono::prelude::*;
 use serenity::client::bridge::gateway::ShardId;
-use serenity::model::user::User;
 use serenity::model::guild::Member;
+use serenity::model::user::User;
 use serenity::utils::Colour;
-
 
 #[group()]
 #[commands(ping, prefix, set, birthday, avatar)]
@@ -43,7 +31,6 @@ async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
     let data = ctx.data.read().await;
 
     let shard_manager = data.get::<ShardManagerContainer>().unwrap();
-
 
     let manager = shard_manager.lock().await;
     let runners = manager.runners.lock().await;
@@ -60,19 +47,22 @@ async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
         Ok(m) => m,
         Err(why) => {
             warn!("Unable to send message: {}", why);
-            return Ok(())
+            return Ok(());
         }
     };
     let rest_latency = format!("{:.2}ms", now.elapsed().as_micros() as f32 / 1000.0);
 
-    message.edit(ctx, |m| {
-        m.content("");
-        m.embed(|e| {
-            e.title("Pong! 🏓");
-            e.color(0xffa500);
-            e.description(format!("*WS:* {}\n*REST:* {}", shard_latency, rest_latency))
+    message
+        .edit(ctx, |m| {
+            m.content("");
+            m.embed(|e| {
+                e.title("Pong! 🏓");
+                e.color(0xffa500);
+                e.description(format!("*WS:* {}\n*REST:* {}", shard_latency, rest_latency))
+            })
         })
-    }).await.unwrap();
+        .await
+        .unwrap();
 
     Ok(())
 }
@@ -82,17 +72,21 @@ async fn prefix(ctx: &Context, msg: &Message) -> CommandResult {
     let data = ctx.data.read().await;
     let config = data.get::<Config>().unwrap();
 
-    if let Err(why) = msg.channel_id.send_message(&ctx.http,  |m| {
-        m.embed(|embed| {
-            embed.title("Prefix");
-            embed.description(format!("My prefix is: `{}`", &config.prefix));
-            embed.color(0xffa500)
-        });
-        m
-
-    }).await {
-        warn!("Failed to send message in #{} because\n{:?}",
-                 msg.channel_id, why
+    if let Err(why) = msg
+        .channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|embed| {
+                embed.title("Prefix");
+                embed.description(format!("My prefix is: `{}`", &config.prefix));
+                embed.color(0xffa500)
+            });
+            m
+        })
+        .await
+    {
+        warn!(
+            "Failed to send message in #{} because\n{:?}",
+            msg.channel_id, why
         );
     };
 
@@ -104,38 +98,73 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data = ctx.data.read().await;
     let db = data.get::<DataBase>().unwrap();
 
-    if !check_birthday_noted(msg.author.id.0 as i64, &db).await.is_empty() {
+    if !check_birthday_noted(msg.author.id.0 as i64, &db)
+        .await
+        .is_empty()
+    {
         reply(&ctx, &msg, &String::from("You already have a birthday set")).await;
-
     } else {
-        reply(&ctx, &msg, &format!("Hey there **{}**, please enter your birthday. `[ DD/MM/YYYY ]`", msg.author.name)).await;
+        reply(
+            &ctx,
+            &msg,
+            &format!(
+                "Hey there **{}**, please enter your birthday. `[ DD/MM/YYYY ]`",
+                msg.author.name
+            ),
+        )
+        .await;
         let date: NaiveDate;
 
-        if let Some(answer) = &msg.author.await_reply(&ctx).timeout(Duration::from_secs(20)).await {
+        if let Some(answer) = &msg
+            .author
+            .await_reply(&ctx)
+            .timeout(Duration::from_secs(20))
+            .await
+        {
             date = NaiveDate::parse_from_str(&answer.content.as_str(), "%d/%m/%Y").unwrap();
-
         } else {
             reply(&ctx, &msg, &String::from("Bruh you didn't reply stupid")).await;
-            return Ok(())
+            return Ok(());
         }
 
         let today: NaiveDate = Utc::today().naive_utc();
 
         if date > today {
-            reply(&ctx, &msg, &"Nope you can't exist in the future smh".to_string()).await;
-            return Ok(())
+            reply(
+                &ctx,
+                &msg,
+                &"Nope you can't exist in the future smh".to_string(),
+            )
+            .await;
+            return Ok(());
         }
 
         let age = calculate_age(date);
 
         match age {
-            0..= 12 => {
+            0..=12 => {
                 reply(&ctx, &msg, &format!("You have to be at least **13** to use Discord **{}**, are you saying that you're underage!? 🤔", msg.author.name)).await;
             }
-            13..= 116 => {
-
-                if confirm(&ctx, &msg, &"Is this correct?".to_string(), &format!("Is your age **{}** and your birthday is on **{}**?", age.to_string(), date.format("%d %B").to_string())).await {
-                    if let Err(why) = db.execute("INSERT INTO birthdaybot.birthdays VALUES ($1, $2)", &[&(msg.author.id.0 as i64), &date]).await {
+            13..=116 => {
+                if confirm(
+                    &ctx,
+                    &msg,
+                    &"Is this correct?".to_string(),
+                    &format!(
+                        "Is your age **{}** and your birthday is on **{}**?",
+                        age.to_string(),
+                        date.format("%d %B").to_string()
+                    ),
+                )
+                .await
+                {
+                    if let Err(why) = db
+                        .execute(
+                            "INSERT INTO birthdaybot.birthdays VALUES ($1, $2)",
+                            &[&(msg.author.id.0 as i64), &date],
+                        )
+                        .await
+                    {
                         warn!("Unable to insert into database {:?}", why)
                     };
                     reply(&ctx, &msg, &"Confirmed!".to_string()).await;
@@ -155,47 +184,62 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 #[aliases("birth", "b")]
 async fn birthday(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let user: User = match args.single_quoted::<String>() {
-        Ok(arg) => {
-            match parse_member(ctx, msg, arg).await {
-                Some(m) => m.user,
-                None => {
-                    reply(ctx, msg, &"Unable to locate user".to_string()).await;
-                    return Ok(());
-                }
+        Ok(arg) => match parse_member(ctx, msg, arg).await {
+            Some(m) => m.user,
+            None => {
+                reply(ctx, msg, &"Unable to locate user".to_string()).await;
+                return Ok(());
             }
-        }
-        Err(_e) => {
-            msg.author.to_owned()
-        }
-
+        },
+        Err(_e) => msg.author.to_owned(),
     };
 
     let data = ctx.data.read().await;
     let db = data.get::<DataBase>().unwrap();
 
     if user.id == ctx.cache.current_user_id().await {
-        reply(ctx, msg, &"Sadly robots don't have birthdays :(".to_string()).await;
-        return Ok(())
+        reply(
+            ctx,
+            msg,
+            &"Sadly robots don't have birthdays :(".to_string(),
+        )
+        .await;
+        return Ok(());
     }
 
     let birthday_noted = check_birthday_noted(user.id.0 as i64, db).await;
     if birthday_noted.is_empty() {
-        reply(ctx, msg, &format!("**{}** has not saved his/her/their birthday yet :(", user.name)).await;
-        return Ok(())
+        reply(
+            ctx,
+            msg,
+            &format!(
+                "**{}** has not saved his/her/their birthday yet :(",
+                user.name
+            ),
+        )
+        .await;
+        return Ok(());
     }
     let birthday: NaiveDate = birthday_noted[0].get(0);
     let age: i32 = calculate_age(birthday);
 
-    check_msg(msg.channel_id.send_message(&ctx.http,  |m| {
-        m.embed(|embed| {
-            embed.title(format!("{}'s birthday", user.name));
-            embed.thumbnail(user.face());
-            embed.description(format!("🍰 Birthday: **{}**\n📅 Age: **{}**", birthday.format("%d %B").to_string(), age));
-            embed.colour(0xffa500)
-        });
-        m
-
-    }).await);
+    check_msg(
+        msg.channel_id
+            .send_message(&ctx.http, |m| {
+                m.embed(|embed| {
+                    embed.title(format!("{}'s birthday", user.name));
+                    embed.thumbnail(user.face());
+                    embed.description(format!(
+                        "🍰 Birthday: **{}**\n📅 Age: **{}**",
+                        birthday.format("%d %B").to_string(),
+                        age
+                    ));
+                    embed.colour(0xffa500)
+                });
+                m
+            })
+            .await,
+    );
     Ok(())
 }
 
@@ -204,30 +248,30 @@ async fn birthday(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 #[only_in("guilds")]
 async fn avatar(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let member: Member = match args.single_quoted::<String>() {
-        Ok(arg) => {
-            match parse_member(ctx, msg, arg).await {
-                Some(m) => m,
-                None => {
-                    reply(ctx, msg, &"Unable to locate user".to_string()).await;
-                    return Ok(());
-                }
+        Ok(arg) => match parse_member(ctx, msg, arg).await {
+            Some(m) => m,
+            None => {
+                reply(ctx, msg, &"Unable to locate user".to_string()).await;
+                return Ok(());
             }
-        }
+        },
         Err(_e) => {
             let guild = msg.guild_id.unwrap();
             guild.member(ctx, msg.author.id).await.unwrap()
         }
-
     };
     let colour = member.colour(ctx).await.unwrap_or(Colour::new(0xffa500));
-    check_msg(msg.channel_id.send_message(&ctx.http,  |m| {
-        m.embed(|embed| {
-            embed.title(format!("{} looking kinda secksy", member.display_name()));
-            embed.image(member.user.face());
-            embed.colour(colour)
-        });
-        m
-
-    }).await);
+    check_msg(
+        msg.channel_id
+            .send_message(&ctx.http, |m| {
+                m.embed(|embed| {
+                    embed.title(format!("{} looking kinda secksy", member.display_name()));
+                    embed.image(member.user.face());
+                    embed.colour(colour)
+                });
+                m
+            })
+            .await,
+    );
     Ok(())
 }

@@ -1,19 +1,14 @@
-use chrono::{NaiveDate, Utc, Datelike};
-use std::time::Duration;
+use chrono::{Datelike, NaiveDate, Utc};
 use serenity::{
-    prelude::*,
-    model::prelude::ReactionType::Unicode,
-    model::prelude::*,
-    Error,
-    Result as SerenityResult
+    model::prelude::ReactionType::Unicode, model::prelude::*, prelude::*, Error,
+    Result as SerenityResult,
 };
+use std::time::Duration;
 
-use log::{
-    warn
-};
+use log::warn;
 
-use tokio_postgres::{Client as DBClient, Row};
 use regex::Regex;
+use tokio_postgres::{Client as DBClient, Row};
 
 pub(crate) async fn reply(ctx: &Context, msg: &Message, content: &String) {
     if let Err(why) = msg.channel_id.say(&ctx.http, &content).await {
@@ -24,8 +19,12 @@ pub(crate) async fn reply(ctx: &Context, msg: &Message, content: &String) {
     }
 }
 
-pub(crate) async fn comp_reply(ctx: &Context, msg: &Message, content: &String) -> Result<Message, Error> {
-    return msg.channel_id.say(&ctx.http, &content).await
+pub(crate) async fn comp_reply(
+    ctx: &Context,
+    msg: &Message,
+    content: &String,
+) -> Result<Message, Error> {
+    return msg.channel_id.say(&ctx.http, &content).await;
 }
 
 pub(crate) fn calculate_age(born: NaiveDate) -> i32 {
@@ -39,29 +38,43 @@ pub(crate) fn calculate_age(born: NaiveDate) -> i32 {
 }
 
 #[allow(unused_must_use)]
-pub(crate) async fn confirm(ctx: &Context, msg: &Message, title: &String, description: &String) -> bool {
-    let conf_msg =  msg.channel_id.send_message(&ctx.http,  |m| {
-        m.embed(|embed| {
-            embed.title(title);
-            embed.description(description);
-            embed.color(0xffa500)
-        });
+pub(crate) async fn confirm(
+    ctx: &Context,
+    msg: &Message,
+    title: &String,
+    description: &String,
+) -> bool {
+    let conf_msg = msg
+        .channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|embed| {
+                embed.title(title);
+                embed.description(description);
+                embed.color(0xffa500)
+            });
 
-        m.reactions(vec![Unicode("✅".to_string()), Unicode("❌".to_string())]);
-        m
-
-    }).await;
+            m.reactions(vec![Unicode("✅".to_string()), Unicode("❌".to_string())]);
+            m
+        })
+        .await;
 
     return match conf_msg {
         Ok(mut conf_msg) => {
-            if let Some(reaction) = &conf_msg.await_reaction(&ctx).timeout(Duration::from_secs(10)).author_id(msg.author.id).await {
+            if let Some(reaction) = &conf_msg
+                .await_reaction(&ctx)
+                .timeout(Duration::from_secs(10))
+                .author_id(msg.author.id)
+                .await
+            {
                 let emoji = &reaction.as_inner_ref().emoji;
 
                 match emoji.as_data().as_str() {
-                    "✅" => { true }
+                    "✅" => true,
                     "❌" => {
                         reply(&ctx, &msg, &"Please restart the process".to_string()).await;
-                        conf_msg.edit(&ctx, |m| m.content("Please restart the process")).await;
+                        conf_msg
+                            .edit(&ctx, |m| m.content("Please restart the process"))
+                            .await;
                         false
                     }
                     _ => {
@@ -70,17 +83,20 @@ pub(crate) async fn confirm(ctx: &Context, msg: &Message, title: &String, descri
                     }
                 }
             } else {
-                conf_msg.edit(&ctx, |m| m.content("What the heck you didn't react")).await;
+                conf_msg
+                    .edit(&ctx, |m| m.content("What the heck you didn't react"))
+                    .await;
                 false
             }
         }
         Err(why) => {
-            warn!("Failed to send message in #{} because\n{:?}",
-                     msg.channel_id, why
+            warn!(
+                "Failed to send message in #{} because\n{:?}",
+                msg.channel_id, why
             );
             false
         }
-    }
+    };
 }
 
 pub(crate) fn check_msg(result: SerenityResult<Message>) {
@@ -90,32 +106,41 @@ pub(crate) fn check_msg(result: SerenityResult<Message>) {
 }
 
 pub(crate) async fn check_birthday_noted(user_id: i64, db: &DBClient) -> Vec<Row> {
-    let user = db.query("SELECT date FROM birthdaybot.birthdays WHERE user_id = $1", &[&user_id])
+    let user = db
+        .query(
+            "SELECT date FROM birthdaybot.birthdays WHERE user_id = $1",
+            &[&user_id],
+        )
         .await
         .unwrap();
 
     user
 }
 
-pub(crate) async fn parse_member(ctx: &Context, msg: &Message, member_name: String) -> Option<Member> {
+pub(crate) async fn parse_member(
+    ctx: &Context,
+    msg: &Message,
+    member_name: String,
+) -> Option<Member> {
     let member: Member;
     if let Ok(id) = member_name.parse::<u64>() {
         member = match msg.guild_id.unwrap().member(ctx, id).await {
             Ok(m) => m,
-            Err(_e) => {
-                return None
-            }
+            Err(_e) => return None,
         };
         Some(member.to_owned())
     } else if member_name.starts_with("<@") && member_name.ends_with(">") {
         let re = Regex::new("[<@!>]").unwrap();
         let member_id = re.replace_all(&member_name, "").into_owned();
 
-        member = match msg.guild_id.unwrap().member(ctx, UserId(member_id.parse::<u64>().unwrap())).await {
+        member = match msg
+            .guild_id
+            .unwrap()
+            .member(ctx, UserId(member_id.parse::<u64>().unwrap()))
+            .await
+        {
             Ok(m) => m,
-            Err(_e) => {
-                return None
-            }
+            Err(_e) => return None,
         };
 
         Some(member.to_owned())

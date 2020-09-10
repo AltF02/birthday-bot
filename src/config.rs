@@ -10,7 +10,7 @@ pub struct Config {
     pub db_uri: String,
     pub role_id: u64,
     pub guild_id: u64,
-    location: String
+    location: String,
 }
 
 impl Config {
@@ -38,13 +38,10 @@ impl Config {
     pub fn save(&self) {
         let serialized = serde_yaml::to_string(&self).expect("Failed to serialize");
         match File::create(&self.location) {
-            Ok(mut file) => {
-                file.write_all(serialized.as_bytes())
-                    .expect("Failed to write")
-            }
-            Err(e) => {
-                panic!("Failed to save config at {}\n{}", self.location, e)
-            }
+            Ok(mut file) => file
+                .write_all(serialized.as_bytes())
+                .expect("Failed to write"),
+            Err(e) => panic!("Failed to save config at {}\n{}", self.location, e),
         }
     }
 
@@ -58,10 +55,10 @@ impl Config {
 
                 match serde_yaml::from_str(&contents) {
                     Ok(des) => Some(des),
-                    Err(_) => None
+                    Err(_) => None,
                 }
             }
-            Err(_) => None
+            Err(_) => None,
         }
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "birthdaybot"
-version = "0.2.4"
+version = "1.0.3"
 authors = ["Matthew <staalkoper@gmail.com>"]
 edition = "2018"
 

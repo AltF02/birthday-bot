@@ -1,15 +1,8 @@
-use serenity::{
-    prelude::TypeMapKey,
-};
+use serenity::prelude::TypeMapKey;
 
-use tokio_postgres::{
-    Client as DBClient,
-    NoTls
-};
+use tokio_postgres::{Client as DBClient, NoTls};
 
-use log::{
-    error
-};
+use log::error;
 
 pub struct DataBase(DBClient);
 
@@ -18,10 +11,7 @@ impl TypeMapKey for DataBase {
 }
 
 pub(crate) async fn connect(uri: &String) -> DBClient {
-    let (db_client, connection)  =
-        tokio_postgres::connect(&uri, NoTls)
-            .await
-            .unwrap();
+    let (db_client, connection) = tokio_postgres::connect(&uri, NoTls).await.unwrap();
 
     tokio::spawn(async move {
         if let Err(e) = connection.await {

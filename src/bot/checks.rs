@@ -1,11 +1,6 @@
 use serenity::{
-    framework::standard::{
-        Args, CheckResult, CommandOptions,
-        macros::check,
-    },
-    model::{
-        channel::Message,
-    },
+    framework::standard::{macros::check, Args, CheckResult, CommandOptions},
+    model::channel::Message,
 };
 
 use serenity::prelude::*;

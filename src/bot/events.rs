@@ -1,21 +1,12 @@
-use serenity::{
-    async_trait,
-    model::prelude::*,
-    prelude::*,
-};
+use serenity::{async_trait, model::prelude::*, prelude::*};
 
-use log::{
-    info,
-    warn
-};
+use log::{info, warn};
 
-use tokio_postgres::{
-    Client as DBClient
-};
-use crate::database::DataBase;
+use crate::bot::utils::{calculate_age, check_msg};
 use crate::config::Config;
-use crate::bot::utils::{check_msg, calculate_age};
+use crate::database::DataBase;
 use chrono::NaiveDate;
+use tokio_postgres::Client as DBClient;
 
 pub struct Handler;
 
@@ -23,7 +14,11 @@ pub struct Handler;
 impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
         let user = &ready.user;
-        ctx.set_presence(Some(Activity::listening("to your birthday songs")), OnlineStatus::Online).await;
+        ctx.set_presence(
+            Some(Activity::listening("your birthday songs")),
+            OnlineStatus::Online,
+        )
+        .await;
         let data = ctx.data.read().await;
         let db = data.get::<DataBase>().unwrap();
         let config = data.get::<Config>().unwrap();
@@ -48,10 +43,13 @@ async fn check_birthday(db: &DBClient, config: &Config, ctx: &Context) {
                         info!("Gave role to {}", member.user.name)
                     }
 
-                    db.query("UPDATE birthdaybot.birthdays SET has_role = true WHERE user_id = $1",
-                             &[&(member.user.id.0 as i64)]).await;
+                    db.query(
+                        "UPDATE birthdaybot.birthdays SET has_role = true WHERE user_id = $1",
+                        &[&(member.user.id.0 as i64)],
+                    )
+                    .await;
 
-                    let channel = ctx.http.get_channel(752960824229757078).await.unwrap();
+                    let channel = ctx.http.get_channel(718691884070993935).await.unwrap();
                     let date: NaiveDate = birthday.get(0);
 
                     check_msg(channel.id().send_message(&ctx.http, |m| {
@@ -85,8 +83,11 @@ async fn check_birthday(db: &DBClient, config: &Config, ctx: &Context) {
         for birthday_over in birthdays_over {
             let user_id: i64 = birthday_over.get(1);
             if let Ok(mut member) = guild.member(ctx, UserId(user_id as u64)).await {
-                db.query("UPDATE birthdaybot.birthdays SET has_role = false WHERE user_id = $1",
-                         &[&(member.user.id.0 as i64)]).await;
+                db.query(
+                    "UPDATE birthdaybot.birthdays SET has_role = false WHERE user_id = $1",
+                    &[&(member.user.id.0 as i64)],
+                )
+                .await;
 
                 if let Err(e) = member.remove_role(&ctx.http, RoleId(config.role_id)).await {
                     warn!("Cannot remove role: {}", e)
