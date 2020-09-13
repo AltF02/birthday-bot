@@ -12,7 +12,7 @@ use serenity::{
     prelude::TypeMapKey, Client,
 };
 
-use crate::database::DataBase;
+use crate::database::ConnectionPool;
 use serenity::http::Http;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -59,12 +59,12 @@ pub async fn start(config: Config) {
         .await
         .expect("Err creating client");
 
-    let db_client = database::connect(&config.db_uri).await;
+    let db_client = database::connect(&config.db_uri).await.unwrap();
 
     {
         let mut data = client.data.write().await;
         data.insert::<Config>(config);
-        data.insert::<DataBase>(db_client);
+        data.insert::<ConnectionPool>(db_client);
         data.insert::<ShardManagerContainer>(Arc::clone(&client.shard_manager));
     }
 

@@ -1,0 +1,108 @@
+{
+  "db": "PostgreSQL",
+  "12fa3becbf90c9724c319b5e498ad0905b158dc4a499b0d7ebcde02289b14b48": {
+    "query": "SELECT date FROM birthdaybot.birthdays WHERE user_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "date",
+          "type_info": "Date"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "2df57201be1d509a21c0887630ba42f98dd0c93750f73ee17002c139b56ed6bd": {
+    "query": "SELECT date, user_id FROM birthdaybot.birthdays WHERE has_role = false AND date = date(now())",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "date",
+          "type_info": "Date"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_id",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "7a60f63e28075806a483d4f4bb32200c543ab743d1fadc9923489772fd2d3abe": {
+    "query": "SELECT date, user_id FROM birthdaybot.birthdays WHERE has_role = true AND date != date(now())",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "date",
+          "type_info": "Date"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_id",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "895ee51dd4d1d0bb2936795356ae1dd71bd6cbcb06ba071abf50a10b7d71a47c": {
+    "query": "UPDATE birthdaybot.birthdays SET has_role = true WHERE user_id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "d8726ad31bd6192c9480910865ebd02c27712fa54de25a2ec25bc9e7d046d5f0": {
+    "query": "UPDATE birthdaybot.birthdays SET has_role = false WHERE user_id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "db8bd88a76c33472ce34a50347b5879344f0ccad18cc4270ec83245e70392746": {
+    "query": "INSERT INTO birthdaybot.birthdays VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Date"
+        ]
+      },
+      "nullable": []
+    }
+  }
+}

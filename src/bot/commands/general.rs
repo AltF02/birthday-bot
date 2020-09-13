@@ -1,7 +1,7 @@
 use crate::bot::utils::{
     calculate_age, check_birthday_noted, check_msg, comp_reply, confirm, parse_member, reply,
 };
-use crate::bot::{DataBase, ShardManagerContainer};
+use crate::bot::{ConnectionPool, ShardManagerContainer};
 use crate::config::Config;
 use serenity::{
     framework::standard::{
@@ -13,7 +13,7 @@ use serenity::{
 };
 use std::time::{Duration, Instant};
 
-use log::warn;
+use log::{info, warn};
 
 use chrono::prelude::*;
 use serenity::client::bridge::gateway::ShardId;
@@ -96,13 +96,9 @@ async fn prefix(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data = ctx.data.read().await;
-    let db = data.get::<DataBase>().unwrap();
-
-    if !check_birthday_noted(msg.author.id.0 as i64, &db)
-        .await
-        .is_empty()
-    {
-        reply(&ctx, &msg, &String::from("You already have a birthday set")).await;
+    let pool = data.get::<ConnectionPool>().unwrap();
+    if let Some(_date) = check_birthday_noted(msg.author.id.0 as i64, &pool).await {
+        msg.reply(&ctx, "You already have a birthday set").await.unwrap();
     } else {
         reply(
             &ctx,
@@ -158,7 +154,7 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 )
                 .await
                 {
-                    if let Err(why) = db
+                    /*                    if let Err(why) = db
                         .execute(
                             "INSERT INTO birthdaybot.birthdays VALUES ($1, $2)",
                             &[&(msg.author.id.0 as i64), &date],
@@ -166,7 +162,16 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                         .await
                     {
                         warn!("Unable to insert into database {:?}", why)
-                    };
+                    };*/
+                    let user_id = msg.author.id.0 as i64;
+                    sqlx::query!(
+                        "INSERT INTO birthdaybot.birthdays VALUES ($1, $2)",
+                        user_id,
+                        &date
+                    )
+                    .execute(pool)
+                    .await?;
+
                     reply(&ctx, &msg, &"Confirmed!".to_string()).await;
                 }
             }
@@ -183,6 +188,7 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 #[command]
 #[aliases("birth", "b")]
 async fn birthday(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    info!("Hello");
     let user: User = match args.single_quoted::<String>() {
         Ok(arg) => match parse_member(ctx, msg, arg).await {
             Some(m) => m.user,
@@ -195,7 +201,7 @@ async fn birthday(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     };
 
     let data = ctx.data.read().await;
-    let db = data.get::<DataBase>().unwrap();
+    let pool = data.get::<ConnectionPool>().unwrap();
 
     if user.id == ctx.cache.current_user_id().await {
         reply(
@@ -207,8 +213,8 @@ async fn birthday(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         return Ok(());
     }
 
-    let birthday_noted = check_birthday_noted(user.id.0 as i64, db).await;
-    if birthday_noted.is_empty() {
+    let birthday_noted = check_birthday_noted(user.id.0 as i64, &pool).await;
+    if let None = birthday_noted {
         reply(
             ctx,
             msg,
@@ -220,7 +226,7 @@ async fn birthday(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         .await;
         return Ok(());
     }
-    let birthday: NaiveDate = birthday_noted[0].get(0);
+    let birthday: NaiveDate = birthday_noted.unwrap();
     let age: i32 = calculate_age(birthday);
 
     check_msg(

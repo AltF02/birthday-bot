@@ -1,6 +1,6 @@
 [package]
 name = "birthdaybot"
-version = "1.0.3"
+version = "1.1.0"
 authors = ["Matthew <staalkoper@gmail.com>"]
 edition = "2018"
 
@@ -25,3 +25,10 @@ features = ["framework", "standard_framework", "rustls_backend", "cache", "colle
 [dependencies.tokio]
 version = "0.2"
 features = ["macros"]
+
+[dependencies.sqlx]
+#version = "0.4.0-beta.1"
+git = "https://github.com/launchbadge/sqlx/"
+branch = "master"
+default-features = false
+features = ["runtime-tokio", "macros", "postgres", "uuid", "offline", "chrono"]

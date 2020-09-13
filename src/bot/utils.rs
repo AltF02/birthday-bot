@@ -8,7 +8,7 @@ use std::time::Duration;
 use log::warn;
 
 use regex::Regex;
-use tokio_postgres::{Client as DBClient, Row};
+use sqlx::PgPool;
 
 pub(crate) async fn reply(ctx: &Context, msg: &Message, content: &String) {
     if let Err(why) = msg.channel_id.say(&ctx.http, &content).await {
@@ -105,16 +105,19 @@ pub(crate) fn check_msg(result: SerenityResult<Message>) {
     }
 }
 
-pub(crate) async fn check_birthday_noted(user_id: i64, db: &DBClient) -> Vec<Row> {
-    let user = db
-        .query(
-            "SELECT date FROM birthdaybot.birthdays WHERE user_id = $1",
-            &[&user_id],
-        )
-        .await
-        .unwrap();
+pub(crate) async fn check_birthday_noted(user_id: i64, pool: &PgPool) -> Option<NaiveDate> {
+    let user = sqlx::query!(
+        "SELECT date FROM birthdaybot.birthdays WHERE user_id = $1",
+        &user_id
+    )
+    .fetch_optional(pool)
+    .await
+    .unwrap();
 
-    user
+    return match user {
+        Some(user) => Some(user.date),
+        None => None,
+    };
 }
 
 pub(crate) async fn parse_member(
