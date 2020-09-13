@@ -5,7 +5,10 @@ use serenity::{
 };
 use std::time::Duration;
 
-use log::warn;
+use log::{
+    warn,
+    error
+};
 
 use regex::Regex;
 use sqlx::PgPool;
@@ -111,13 +114,18 @@ pub(crate) async fn check_birthday_noted(user_id: i64, pool: &PgPool) -> Option<
         &user_id
     )
     .fetch_optional(pool)
-    .await
-    .unwrap();
+    .await;
+    if let Err(e) = user {
+        error!("Failed to query, {}", e);
+        None
+    } else {
+        return match user.unwrap() {
+            Some(user) => Some(user.date),
+            None => None,
+        };
+    }
 
-    return match user {
-        Some(user) => Some(user.date),
-        None => None,
-    };
+
 }
 
 pub(crate) async fn parse_member(

@@ -13,7 +13,7 @@ use serenity::{
 };
 use std::time::{Duration, Instant};
 
-use log::{info, warn};
+use log::warn;
 
 use chrono::prelude::*;
 use serenity::client::bridge::gateway::ShardId;
@@ -97,6 +97,7 @@ async fn prefix(ctx: &Context, msg: &Message) -> CommandResult {
 async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let data = ctx.data.read().await;
     let pool = data.get::<ConnectionPool>().unwrap();
+
     if let Some(_date) = check_birthday_noted(msg.author.id.0 as i64, &pool).await {
         msg.reply(&ctx, "You already have a birthday set").await.unwrap();
     } else {
@@ -188,7 +189,6 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 #[command]
 #[aliases("birth", "b")]
 async fn birthday(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    info!("Hello");
     let user: User = match args.single_quoted::<String>() {
         Ok(arg) => match parse_member(ctx, msg, arg).await {
             Some(m) => m.user,
