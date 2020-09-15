@@ -53,11 +53,4 @@ Now once that is done we can run it again and it should work now
 cargo run
 ```
 
-Now if you want to run it on a server of some sort use the release build
-```shell script
-cargo build --release
-```
-This will create a executable in /target/release, you can use this executable everywhere without needing the other files
-###### NOTE: You will still need config.yml or it will generate one for you
-
-If you run into any issues don't hesitate to open an issue
+If you run into any issues please don't hesitate to open an issue
