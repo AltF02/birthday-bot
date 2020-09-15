@@ -59,12 +59,12 @@ pub async fn start(config: Config) {
         .await
         .expect("Err creating client");
 
-    let db_client = database::connect(&config.db_uri).await.unwrap();
+    let pool = database::connect(&config.db_uri).await.unwrap();
 
     {
         let mut data = client.data.write().await;
         data.insert::<Config>(config);
-        data.insert::<ConnectionPool>(db_client);
+        data.insert::<ConnectionPool>(pool);
         data.insert::<ShardManagerContainer>(Arc::clone(&client.shard_manager));
     }
 
