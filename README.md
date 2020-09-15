@@ -29,7 +29,7 @@ location: "./config.yml"
 ```
 
 Now once that is done we can run it again and it should work now
-```
+```shell script
 cargo run
 ```
 
