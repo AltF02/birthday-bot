@@ -1,4 +1,4 @@
-![Rust](https://github.com/DankDumpster/birthday-bot/workflows/Rust/badge.svg)
+![Rust](https://github.com/DankDumpster/birthday-bot/workflows/build/badge.svg)
 # Birthday bot
 Birthdaybot is a discord bot that keeps track of everyone's birthday! So you won't have to remember everything, 
 and they even get a really cool role. Currently this needs to be self hosted for every server,
