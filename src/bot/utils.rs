@@ -5,10 +5,7 @@ use serenity::{
 };
 use std::time::Duration;
 
-use log::{
-    warn,
-    error
-};
+use log::{error, warn};
 
 use regex::Regex;
 use sqlx::PgPool;
@@ -124,8 +121,6 @@ pub(crate) async fn check_birthday_noted(user_id: i64, pool: &PgPool) -> Option<
             None => None,
         };
     }
-
-
 }
 
 pub(crate) async fn parse_member(

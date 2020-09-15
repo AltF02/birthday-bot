@@ -99,7 +99,9 @@ async fn set(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let pool = data.get::<ConnectionPool>().unwrap();
 
     if let Some(_date) = check_birthday_noted(msg.author.id.0 as i64, &pool).await {
-        msg.reply(&ctx, "You already have a birthday set").await.unwrap();
+        msg.reply(&ctx, "You already have a birthday set")
+            .await
+            .unwrap();
     } else {
         reply(
             &ctx,
