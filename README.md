@@ -9,6 +9,7 @@ but I'm planning on making a running version that'll work for multiple servers
 ### Requirements
 * [Rust](https://www.rust-lang.org/tools/install)
 * [Git](https://git-scm.com/downloads)
+* [Postgres](https://www.postgresql.org/download/)
 
 ## Building
 ```shell script
