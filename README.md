@@ -17,6 +17,28 @@ cd ./birthday-bot
 cargo build --release
 mv /target/release/birthday-bot .
 ```
+
+We need to configure the database, so we do that by running this sql in a postgres console
+```sql
+create schema birthdaybot;
+
+create table birthdaybot.birthdays
+(
+    user_id  bigint                not null
+        constraint birthdays_pk
+            primary key,
+    date     date                  not null,
+    has_role boolean default false not null
+);
+
+alter table birthdaybot.birthdays
+    owner to noodles;
+
+create unique index birthdays_user_id_uindex
+    on birthdaybot.birthdays (user_id);
+
+```
+
 Now we can run the build 
 ```shell script
 ./bithday-bot
